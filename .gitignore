@@ -1,7 +1,7 @@
 node_modules
 npm-debug.log*
 coverage
-
+.vscode
 modules/jquery/dist
 modules/jquery/external
 modules/jquery/src

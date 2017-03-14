@@ -186,7 +186,7 @@
     "yaspeller": "^3.0.0"
   },
   "engines": {
-    "node": ">=0.10"
+    "node": ">=6.9.1"
   },
   "license": "MIT",
   "main": "legacy/server/cloudcmd.js"

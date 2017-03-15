@@ -149,6 +149,7 @@
     "squad": "^1.1.3",
     "try-catch": "^1.0.0",
     "tryrequire": "^1.1.5",
+    "webpack": "^2.2.1",
     "writejson": "^1.1.0"
   },
   "devDependencies": {
@@ -182,7 +183,6 @@
     "tape": "^4.4.0",
     "tar-stream": "^1.5.2",
     "version-io": "^1.2.5",
-    "webpack": "^2.2.1",
     "yaspeller": "^3.0.0"
   },
   "engines": {

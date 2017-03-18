@@ -9,6 +9,7 @@ const cloudfunc = require(DIR_COMMON + 'cloudfunc');
 const auth = require(DIR + 'auth');
 const config = require(DIR + 'config');
 const rest = require(DIR + 'rest');
+const provider = require(DIR + 'provider');
 const route = require(DIR + 'route');
 const validate = require(DIR + 'validate');
 const prefixer = require(DIR + 'prefixer');
@@ -275,6 +276,7 @@ function cloudcmd(prefix, plugins) {
         
         rest,
         route,
+        provider,
         
         join({
             dir     : DIR_ROOT,

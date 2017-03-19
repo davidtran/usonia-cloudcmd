@@ -3,16 +3,13 @@ var readline = require('readline');
 var google = require('googleapis');
 var googleAuth = require('google-auth-library');
 var config = require('../json/google-drive-config.json');
-// If modifying these scopes, delete your previously saved credentials
-// at ~/.credentials/drive-nodejs-quickstart.json
+var path = require('path');
+var rootPath = path.join(__dirname, '/..');
 var SCOPES = ['https://www.googleapis.com/auth/drive.metadata.readonly'];
-var TOKEN_DIR = (process.env.HOME || process.env.HOMEPATH ||
-    process.env.USERPROFILE) + '/.credentials/';
-var TOKEN_PATH = TOKEN_DIR + 'drive-nodejs-quickstart.json';
 
 var Datastore = require('nedb');
 var db = new Datastore({
-    filename: __dirname + '/db.json',
+    filename: path.join(rootPath, '/db.json'),
     autoload: true
 });
 
@@ -69,7 +66,7 @@ function getURL(callback) {
 
 function authorize(ip, callback) {
     var authUrl = this.oauth2Client.generateAuthUrl({
-        access_type: 'offline',
+        access_type: 'online',
         scope: SCOPES
     });
 
@@ -103,20 +100,47 @@ function storeToken(ip, code, callback) {
                 ip: ip,
                 token: token
             };
-            db.insert(dataStore, function (error) {
-                let success = error ? 'false' : 'true';
-                if(error){
-                    callback(error.toString());
-                }else{
-                    var data = `
-                    <html><body>NODE<script>
-                    let success = ${success};
-                    window.parent.opener.postMessage({
-                        loginSuccess: true
-                    }, '*');
-                    window.close(); 
-                    </script></body></html>`;
-                    callback(null, data);
+            db.findOne({
+                ip: ip
+            }, function (err, doc) {
+                if (err) {
+                    callback(err.toString());
+                } else {
+                    if (doc) {
+                        db.update({_id: doc._id}, dataStore, {}, function (error) {
+                            let success = error ? 'false' : 'true';
+                            if(error){
+                                callback(error.toString());
+                            }else{
+                                var data = `
+                                <html><body>NODE<script>
+                                let success = ${success};
+                                window.parent.opener.postMessage({
+                                    loginSuccess: true
+                                }, '*');
+                                window.close(); 
+                                </script></body></html>`;
+                                callback(null, data);
+                            }
+                        })
+                    } else {
+                        db.insert(dataStore, function (error) {
+                            let success = error ? 'false' : 'true';
+                            if(error){
+                                callback(error.toString());
+                            }else{
+                                var data = `
+                                <html><body>NODE<script>
+                                let success = ${success};
+                                window.parent.opener.postMessage({
+                                    loginSuccess: true
+                                }, '*');
+                                window.close(); 
+                                </script></body></html>`;
+                                callback(null, data);
+                            }
+                        })
+                    }
                 }
             })
         }

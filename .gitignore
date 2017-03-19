@@ -27,3 +27,4 @@ server_
 dist
 dist-dev
 
+db.json

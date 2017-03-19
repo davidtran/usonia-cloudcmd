@@ -233,12 +233,14 @@ function listFilesRoot(ip, callback) {
 function listFiles(ip, id, callback) {
     var self = this;
     var auth = this.oauth2Client;
+    console.log('ip', ip);
     db.findOne({
         ip: ip
     }, function (err, doc) {
         if (err) {
             callback(err);
         } else {
+            console.log('doc', doc);
             if (doc) {
                 refreshToken.call(self, doc.token, function (errorToken, status) {
                     if (!errorToken) {

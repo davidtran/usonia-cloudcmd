@@ -1,0 +1,7 @@
+{
+    "installed": {
+        "app_key": "bo8dx5lxhhcngjj",
+        "secret": "st9u3mqp0s5gcje",
+        "redirect_uris": ["http://localhost:8080/provider/dropbox"]
+    }
+}

@@ -83,7 +83,9 @@ function onGET(params, callback) {
     };
     switch (providerName) {
         case 'google':
-            googleProvider.onGET(_params, callback);
+            googleProvider.refreshToken(_params, function (error) {
+                googleProvider.onGET(_params, callback);
+            })
             break;
         case 'dropbox':
             dropboxProvider.onGET(_params, callback);
@@ -107,7 +109,9 @@ function onPOST(params, callback) {
     };
     switch (providerName) {
         case 'google':
-            googleProvider.onPOST(_params, callback);
+            googleProvider.refreshToken(_params, function (error) {
+                googleProvider.onPOST(_params, callback);
+            })
             break;
         case 'dropbox':
             callback({

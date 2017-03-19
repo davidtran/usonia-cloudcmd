@@ -7,7 +7,7 @@ var googleAuth = require('google-auth-library');
 var config = require('../json/google-drive-config.json');
 var path = require('path');
 var rootPath = path.join(__dirname, '/..');
-var SCOPES = ['https://www.googleapis.com/auth/drive','https://www.googleapis.com/auth/drive.file','https://www.googleapis.com/auth/drive.appdata'];
+var SCOPES = ['https://www.googleapis.com/auth/drive', 'https://www.googleapis.com/auth/drive.file', 'https://www.googleapis.com/auth/drive.appdata'];
 
 var Datastore = require('nedb');
 var db = new Datastore({
@@ -92,16 +92,10 @@ function authorize(ip, callback) {
             callback(err);
         } else {
             if (doc) {
-                refreshToken.call(self, doc.token, function (errorToken, status) {
-                    if (!errorToken) {
-                        callback(null, {
-                            status: status,
-                            authUrl: authUrl
-                        });
-                    } else {
-                        callback('can not refresh token');
-                    }
-                })
+                callback(null, {
+                    status: true,
+                    authUrl: authUrl
+                });
             } else {
                 callback(null, {
                     status: false,
@@ -112,37 +106,58 @@ function authorize(ip, callback) {
     })
 }
 
-function refreshToken(token, callback) {
+GoogleService.prototype.refreshToken = function (params, callback) {
     var self = this;
-    var currentTime = new Date();
-    if (token.expiry_date < currentTime.getTime()) {
-        self.oauth2Client.refreshToken_(token.access_token, function (error, newToken) {
-            if (error) {
-                callback(error);
-                return;
+    var req = params.request;
+    var ip =
+        req.connection.remoteAddress ||
+        req.socket.remoteAddress ||
+        req.connection.socket.remoteAddress;
+    db.findOne({
+        ip: ip
+    }, function (err, doc) {
+        if (err) {
+            callback(err);
+        } else {
+            if (doc) {
+                self.oauth2Client.refreshToken_(doc.token.access_token, function (error, newToken) {
+                    if (error) {
+                        console.log(error);
+                        db.remove({
+                            ip: ip
+                        }, {
+                            multi: true
+                        }, function () {
+                            callback();
+                            return;
+                        })
+                    }
+                    var dataStore = {
+                        token: newToken
+                    };
+                    db.update({
+                        ip: ip
+                    }, {
+                        $set: dataStore
+                    }, {}, function (errorUpdate) {
+                        if (errorUpdate) {
+                            callback();
+                        } else {
+                            callback();
+                        }
+                    })
+                })
+            } else {
+                callback();
             }
-            var dataStore = {
-                ip: ip,
-                token: newToken
-            };
-            db.update({
-                _id: doc._id
-            }, dataStore, {}, function (errorUpdate) {
-                if (errorUpdate) {
-                    callback(errorUpdate);
-                } else {
-                    callback(null, false);
-                }
-            })
+        }
+    })
 
-        })
-    } else {
-        callback(null, true);
-    }
+
 }
 
 function storeToken(ip, code, callback) {
-    console.log(ip);
+    
     this.oauth2Client.getToken(code, function (err, token) {
         if (err) {
             callback(err);
@@ -189,6 +204,7 @@ function storeToken(ip, code, callback) {
 function listFilesRoot(ip, callback) {
     var self = this;
     var auth = this.oauth2Client;
+    console.log('ip', ip);
     db.findOne({
         ip: ip
     }, function (err, doc) {
@@ -196,31 +212,27 @@ function listFilesRoot(ip, callback) {
             callback(err);
         } else {
             if (doc) {
-                refreshToken.call(self, doc.token, function (errorToken, status) {
-                    if (!errorToken) {
-                        auth.credentials = doc.token;
-                        var service = google.drive('v3');
-                        service.files.list({
-                            auth: auth,
-                            pageSize: 100,
-                            q: "'root' in parents and 'me' in owners",
-                            fields: "nextPageToken, files(id, name, size, kind, modifiedTime, thumbnailLink, webViewLink, iconLink, ownedByMe, parents, mimeType)"
-                        }, function (err, response) {
-                            if (err) {
-                                callback('The API returned an error: ' + err);
-                                return;
-                            }
-                            var files = response.files;
-                            if (files.length == 0) {
-                                callback('No files found.');
-                            } else {
-                                callback(null, files);
-                            }
-                        });
-                    } else {
-                        callback('can not refresh token');
+                console.log('doc', doc);
+                auth.credentials = doc.token;
+                var service = google.drive('v3');
+                service.files.list({
+                    auth: auth,
+                    pageSize: 100,
+                    q: "'root' in parents and 'me' in owners",
+                    fields: "nextPageToken, files(id, name, size, kind, modifiedTime, thumbnailLink, webViewLink, iconLink, ownedByMe, parents, mimeType)"
+                }, function (err, response) {
+                    if (err) {
+                        callback('The API returned an error: ' + err);
+                        return;
                     }
-                })
+                    var files = response.files;
+                    if (files.length == 0) {
+                        callback('No files found.');
+                    } else {
+                        callback(null, files);
+                    }
+                });
+
             } else {
                 callback(null, {
                     status: false
@@ -233,40 +245,33 @@ function listFilesRoot(ip, callback) {
 function listFiles(ip, id, callback) {
     var self = this;
     var auth = this.oauth2Client;
-    console.log('ip', ip);
     db.findOne({
         ip: ip
     }, function (err, doc) {
         if (err) {
             callback(err);
         } else {
-            console.log('doc', doc);
             if (doc) {
-                refreshToken.call(self, doc.token, function (errorToken, status) {
-                    if (!errorToken) {
-                        auth.credentials = doc.token;
-                        var service = google.drive('v3');
-                        service.files.list({
-                            auth: auth,
-                            pageSize: 100,
-                            q: `'${id}' in parents and 'me' in owners`,
-                            fields: "nextPageToken, files(id, name, size, kind, modifiedTime, thumbnailLink, webViewLink, iconLink, ownedByMe, parents, mimeType)"
-                        }, function (err, response) {
-                            if (err) {
-                                callback('The API returned an error: ' + err);
-                                return;
-                            }
-                            var files = response.files;
-                            if (files.length == 0) {
-                                callback('No files found.');
-                            } else {
-                                callback(null, files);
-                            }
-                        });
-                    } else {
-                        callback('can not refresh token');
+                auth.credentials = doc.token;
+                var service = google.drive('v3');
+                service.files.list({
+                    auth: auth,
+                    pageSize: 100,
+                    q: `'${id}' in parents and 'me' in owners`,
+                    fields: "nextPageToken, files(id, name, size, kind, modifiedTime, thumbnailLink, webViewLink, iconLink, ownedByMe, parents, mimeType)"
+                }, function (err, response) {
+                    if (err) {
+                        callback('The API returned an error: ' + err);
+                        return;
                     }
-                })
+                    var files = response.files;
+                    if (files.length == 0) {
+                        callback('No files found.');
+                    } else {
+                        callback(null, files);
+                    }
+                });
+
             } else {
                 callback(null, {
                     status: false
@@ -286,29 +291,23 @@ function downloadFile(ip, id, _dest, callback) {
             callback(err);
         } else {
             if (doc) {
-                refreshToken.call(this, doc.token, function (errorToken, status) {
-                    if (!errorToken) {
-                        auth.credentials = doc.token;
-                        var service = google.drive('v3');
-                        var dest = fs.createWriteStream(_dest);
-                        service.files.get({
-                                auth: auth,
-                                fileId: id,
-                                alt: 'media'
-                            })
-                            .on('end', function () {
-                                callback(null, {
-                                    status: true
-                                });
-                            })
-                            .on('error', function (err) {
-                                callback('Error during download', err);
-                            })
-                            .pipe(dest);
-                    } else {
-                        callback('can not refresh token');
-                    }
-                })
+                auth.credentials = doc.token;
+                var service = google.drive('v3');
+                var dest = fs.createWriteStream(_dest);
+                service.files.get({
+                        auth: auth,
+                        fileId: id,
+                        alt: 'media'
+                    })
+                    .on('end', function () {
+                        callback(null, {
+                            status: true
+                        });
+                    })
+                    .on('error', function (err) {
+                        callback('Error during download', err);
+                    })
+                    .pipe(dest);
             } else {
                 callback(null, {
                     status: false

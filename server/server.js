@@ -14,6 +14,8 @@ const io = require('socket.io');
 const squad = require('squad');
 const apart = require('apart');
 
+var bodyParser = require('body-parser');
+
 const tryRequire = require('tryrequire');
 const logger = tryRequire('morgan');
 
@@ -30,7 +32,7 @@ module.exports = (options) => {
     
     const app = express();
     const server = http.createServer(app);
-    
+    app.use(bodyParser.json())
     if (logger)
         app.use(logger('dev'));
     

@@ -57,6 +57,15 @@ function sendData(params) {
                 }
             });
             break;
+        case 'POST':
+            onPOST(params, function (err, data) {
+                if(err){
+                    p.response.end(err.toString());
+                }else{
+                    p.response.json(data);
+                }
+            })
+            break;
         default:
             p.response.end('Not Found');
             break;
@@ -89,11 +98,18 @@ function onGET(params, callback) {
 
 function onPOST(params, callback) {
     var name = params.name;
-    switch (name) {
-        case '/google':
-            googleProvider.onPOST(params, callback);
+    var listParams = name.split('/');
+    var providerName = listParams[1];
+    var _params = {
+        request: params.request,
+        response: params.response,
+        name: listParams[2] || '',
+    };
+    switch (providerName) {
+        case 'google':
+            googleProvider.onPOST(_params, callback);
             break;
-        case '/dropbox':
+        case 'dropbox':
             callback({
                 message: 'Dropbox'
             });

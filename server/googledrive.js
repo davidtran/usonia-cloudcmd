@@ -111,7 +111,9 @@ function storeToken(ip, code, callback) {
                     var data = `
                     <html><body>NODE<script>
                     let success = ${success};
-                    window.opener.authFinish(success); 
+                    window.parent.opener.postMessage({
+                        loginSuccess: true
+                    }, '*');
                     window.close(); 
                     </script></body></html>`;
                     callback(null, data);

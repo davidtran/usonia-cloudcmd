@@ -37,7 +37,12 @@ GoogleService.prototype.onGET = function (params, callback) {
             authorize.call(this, ip, callback);
             break;
         case 'files':
-            listFiles.call(this, ip, callback);
+            var id = req.query['id'];
+            if(!id){
+                listFilesRoot.call(this, ip, callback);
+            }else{
+                listFiles.call(this, ip, id, callback);
+            }
             break;
         case '':
             var code = req.query['code'];
@@ -65,7 +70,7 @@ function getURL(callback) {
 }
 
 function authorize(ip, callback) {
-    console.log(ip);
+    var self = this;
     var authUrl = this.oauth2Client.generateAuthUrl({
         access_type: 'online',
         scope: SCOPES
@@ -78,10 +83,31 @@ function authorize(ip, callback) {
             callback(err);
         } else {
             if (doc) {
-                callback(null, {
-                    status: true,
-                    authUrl: authUrl
-                });
+                // self.oauth2Client.very
+                var currentTime = new Date();
+                if(doc.token.expiry_date < currentTime.getDate()){
+                    self.oauth2Client.refreshToken_(doc.token.access_token, function (error, newToken) {
+                        if(error){
+                            callback(error);
+                            return;
+                        }
+                        var dataStore = {
+                            ip: ip,
+                            token: newToken
+                        };
+                        db.update({_id: doc._id}, dataStore, {}, function (errorUpdate) {
+                            if(errorUpdate){
+                                callback(errorUpdate);
+                            }else{
+                                callback(null, {
+                                    status: true,
+                                    authUrl: authUrl
+                                });
+                            }
+                        })
+                        
+                    })
+                }
             } else {
                 callback(null, {
                     status: false,
@@ -135,7 +161,7 @@ function storeToken(ip, code, callback) {
     });
 }
 
-function listFiles(ip, callback) {
+function listFilesRoot(ip, callback) {
     var auth = this.oauth2Client;
     db.findOne({
         ip: ip
@@ -148,8 +174,46 @@ function listFiles(ip, callback) {
                 var service = google.drive('v3');
                 service.files.list({
                     auth: auth,
-                    pageSize: 10,
-                    fields: "nextPageToken, files(id, name)"
+                    pageSize: 100,
+                    q: "'root' in parents and 'me' in owners",
+                    fields: "nextPageToken, files(id, name, size, kind, modifiedTime, thumbnailLink, webViewLink, iconLink, ownedByMe, parents, mimeType)"
+                }, function (err, response) {
+                    if (err) {
+                        callback('The API returned an error: ' + err);
+                        return;
+                    }
+                    var files = response.files;
+                    if (files.length == 0) {
+                        callback('No files found.');
+                    } else {
+                        callback(null, files);
+                    }
+                });
+            } else {
+                callback(null, {
+                    status: false
+                });
+            }
+        }
+    })
+}
+
+function listFiles(ip, id, callback) {
+    var auth = this.oauth2Client;
+    db.findOne({
+        ip: ip
+    }, function (err, doc) {
+        if (err) {
+            callback(err);
+        } else {
+            if (doc) {
+                auth.credentials = doc.token;
+                var service = google.drive('v3');
+                service.files.list({
+                    auth: auth,
+                    pageSize: 100,
+                    q: `'${id}' in parents and 'me' in owners`,
+                    fields: "nextPageToken, files(id, name, size, kind, modifiedTime, thumbnailLink, webViewLink, iconLink, ownedByMe, parents, mimeType)"
                 }, function (err, response) {
                     if (err) {
                         callback('The API returned an error: ' + err);

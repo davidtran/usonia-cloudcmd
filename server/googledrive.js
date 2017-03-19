@@ -28,7 +28,6 @@ GoogleService.prototype.onGET = function (params, callback) {
     var req = params.request;
     console.log('req.connection.remoteAddress',req.connection.remoteAddress);
     console.log('req.socket.remoteAddress',req.socket.remoteAddress);
-    console.log('req.connection.socket.remoteAddress',req.connection.socket.remoteAddress);
     var ip =
         req.connection.remoteAddress ||
         req.socket.remoteAddress ||

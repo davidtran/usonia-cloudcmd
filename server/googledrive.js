@@ -6,6 +6,7 @@ var google = require('googleapis');
 var googleAuth = require('google-auth-library');
 var config = require('../json/google-drive-config.json');
 var path = require('path');
+const requestIp = require('request-ip');
 var rootPath = path.join(__dirname, '/..');
 var SCOPES = ['https://www.googleapis.com/auth/drive', 'https://www.googleapis.com/auth/drive.file', 'https://www.googleapis.com/auth/drive.appdata'];
 
@@ -26,8 +27,10 @@ function GoogleService() {
 GoogleService.prototype.onGET = function (params, callback) {
     var name = params.name;
     var req = params.request;
+    const clientIp = requestIp.getClientIp(req); 
     console.log('req.connection.remoteAddress',req.connection.remoteAddress);
     console.log('req.socket.remoteAddress',req.socket.remoteAddress);
+    console.log('newIP', clientIp);
     var ip =
         req.connection.remoteAddress ||
         req.socket.remoteAddress ||

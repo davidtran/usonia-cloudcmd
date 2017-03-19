@@ -24,7 +24,7 @@ function GoogleService() {
 GoogleService.prototype.onGET = function (params, callback) {
     var name = params.name;
     var req = params.request;
-    var ip = req.headers['x-forwarded-for'] ||
+    var ip = 
         req.connection.remoteAddress ||
         req.socket.remoteAddress ||
         req.connection.socket.remoteAddress;
@@ -65,6 +65,7 @@ function getURL(callback) {
 }
 
 function authorize(ip, callback) {
+    console.log(ip);
     var authUrl = this.oauth2Client.generateAuthUrl({
         access_type: 'online',
         scope: SCOPES
@@ -92,6 +93,7 @@ function authorize(ip, callback) {
 }
 
 function storeToken(ip, code, callback) {
+    console.log(ip);
     this.oauth2Client.getToken(code, function (err, token) {
         if (err) {
             callback(err.toString());
@@ -113,7 +115,7 @@ function storeToken(ip, code, callback) {
                                 callback(error.toString());
                             }else{
                                 var data = `
-                                <html><body>NODE<script>
+                                <html><body><script>
                                 let success = ${success};
                                 window.parent.opener.postMessage({
                                     loginSuccess: true
@@ -130,7 +132,7 @@ function storeToken(ip, code, callback) {
                                 callback(error.toString());
                             }else{
                                 var data = `
-                                <html><body>NODE<script>
+                                <html><body><script>
                                 let success = ${success};
                                 window.parent.opener.postMessage({
                                     loginSuccess: true

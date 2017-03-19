@@ -97,8 +97,7 @@
     "legacy:help": "cp json/help.json legacy/json/",
     "rm:server": "rimraf server_ legacy",
     "rm:client": "rimraf dist dist-dev",
-    "heroku-prebuild": "NODE_HOSTNAME='https://usonia-cloudcmd.herokuapp.com/'",
-    "heroku-postbuild": "redrun 6to5:client -- --progress && npm i gritty"
+    "heroku-postbuild": "NODE_HOSTNAME='https://usonia-cloudcmd.herokuapp.com/' redrun 6to5:client -- --progress && npm i gritty"
   },
   "directories": {
     "man": "man"

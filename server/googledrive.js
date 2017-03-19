@@ -18,7 +18,8 @@ var db = new Datastore({
 function GoogleService() {
     var clientSecret = config.installed.client_secret;
     var clientId = config.installed.client_id;
-    var redirectUrl = config.installed.redirect_uris[0];
+    var hostname = process.env.NODE_HOSTNAME ? process.env.NODE_HOSTNAME : 'http://localhost:8000/';
+    var redirectUrl = hostname + config.installed.redirect_uris[0];
     var auth = new googleAuth();
     this.oauth2Client = new auth.OAuth2(clientId, clientSecret, redirectUrl);
 };
@@ -92,10 +93,10 @@ function authorize(ip, callback) {
             callback(err);
         } else {
             if (doc) {
-                refreshToken(doc.token, function (status) {
-                    if (status) {
+                refreshToken.call(self, doc.token, function (errorToken, status) {
+                    if (!errorToken) {
                         callback(null, {
-                            status: true,
+                            status: status,
                             authUrl: authUrl
                         });
                     } else {
@@ -129,15 +130,15 @@ function refreshToken(token, callback) {
                 _id: doc._id
             }, dataStore, {}, function (errorUpdate) {
                 if (errorUpdate) {
-                    callback(false);
+                    callback(errorUpdate);
                 } else {
-                    callback(true);
+                    callback(null, false);
                 }
             })
 
         })
     } else {
-        callback(true);
+        callback(null, true);
     }
 }
 
@@ -187,6 +188,7 @@ function storeToken(ip, code, callback) {
 }
 
 function listFilesRoot(ip, callback) {
+    var self = this;
     var auth = this.oauth2Client;
     db.findOne({
         ip: ip
@@ -195,8 +197,8 @@ function listFilesRoot(ip, callback) {
             callback(err);
         } else {
             if (doc) {
-                refreshToken(doc.token, function (status) {
-                    if (status) {
+                refreshToken.call(self, doc.token, function (errorToken, status) {
+                    if (!errorToken) {
                         auth.credentials = doc.token;
                         var service = google.drive('v3');
                         service.files.list({
@@ -230,6 +232,7 @@ function listFilesRoot(ip, callback) {
 }
 
 function listFiles(ip, id, callback) {
+    var self = this;
     var auth = this.oauth2Client;
     db.findOne({
         ip: ip
@@ -238,8 +241,8 @@ function listFiles(ip, id, callback) {
             callback(err);
         } else {
             if (doc) {
-                refreshToken(doc.token, function (status) {
-                    if (status) {
+                refreshToken.call(self, doc.token, function (errorToken, status) {
+                    if (!errorToken) {
                         auth.credentials = doc.token;
                         var service = google.drive('v3');
                         service.files.list({
@@ -273,6 +276,7 @@ function listFiles(ip, id, callback) {
 }
 
 function downloadFile(ip, id, _dest, callback) {
+    var self = this;
     var auth = this.oauth2Client;
     db.findOne({
         ip: ip
@@ -281,8 +285,8 @@ function downloadFile(ip, id, _dest, callback) {
             callback(err);
         } else {
             if (doc) {
-                refreshToken(doc.token, function (status) {
-                    if (status) {
+                refreshToken.call(this, doc.token, function (errorToken, status) {
+                    if (!errorToken) {
                         auth.credentials = doc.token;
                         var service = google.drive('v3');
                         var dest = fs.createWriteStream(_dest);

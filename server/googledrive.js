@@ -48,7 +48,7 @@ GoogleService.prototype.onGET = function (params, callback) {
             storeToken.call(this, ip, code, callback);
             break;
         default:
-            callback('There no API');        
+            callback('There no API');
             break;
     }
 }
@@ -68,6 +68,11 @@ function getURL(callback) {
 }
 
 function authorize(ip, callback) {
+    var authUrl = this.oauth2Client.generateAuthUrl({
+        access_type: 'offline',
+        scope: SCOPES
+    });
+
     db.findOne({
         ip: ip
     }, function (err, doc) {
@@ -76,11 +81,13 @@ function authorize(ip, callback) {
         } else {
             if (doc) {
                 callback(null, {
-                    status: true
+                    status: true,
+                    authUrl: authUrl
                 });
             } else {
                 callback(null, {
-                    status: false
+                    status: false,
+                    authUrl: authUrl
                 });
             }
         }
@@ -97,10 +104,16 @@ function storeToken(ip, code, callback) {
                 token: token
             };
             db.insert(dataStore, function (error) {
+                let success = error ? 'false' : 'true';
                 if(error){
                     callback(error.toString());
                 }else{
-                    var data = '<html><body>NODE<script> window.close(); </script></body></html>';
+                    var data = `
+                    <html><body>NODE<script>
+                    let success = ${success};
+                    window.opener.authFinish(success); 
+                    window.close(); 
+                    </script></body></html>`;
                     callback(null, data);
                 }
             })

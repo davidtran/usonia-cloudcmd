@@ -18,8 +18,7 @@ var db = new Datastore({
 function GoogleService() {
     var clientSecret = config.installed.client_secret;
     var clientId = config.installed.client_id;
-    var hostname = process.env.NODE_HOSTNAME ? process.env.NODE_HOSTNAME : 'http://localhost:8000/';
-    var redirectUrl = hostname + config.installed.redirect_uris[0];
+    var redirectUrl = process.env.NODE_HOSTNAME ? config.installed.redirect_uris[1] : config.installed.redirect_uris[0];
     var auth = new googleAuth();
     this.oauth2Client = new auth.OAuth2(clientId, clientSecret, redirectUrl);
 };

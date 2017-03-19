@@ -9,7 +9,7 @@ var SCOPES = ['https://www.googleapis.com/auth/drive.metadata.readonly'];
 
 var Datastore = require('nedb');
 var db = new Datastore({
-    filename: path.join(rootPath, '/db.json'),
+    filename: path.join(rootPath, '/google_drive_db.json'),
     autoload: true
 });
 
@@ -74,7 +74,7 @@ function authorize(ip, callback) {
         ip: ip
     }, function (err, doc) {
         if (err) {
-            callback(err.toString());
+            callback(err);
         } else {
             if (doc) {
                 callback(null, {
@@ -94,8 +94,12 @@ function authorize(ip, callback) {
 function storeToken(ip, code, callback) {
     this.oauth2Client.getToken(code, function (err, token) {
         if (err) {
-            callback(err.toString());
+            callback(err);
         }else{
+            if(!token){
+                callback(null, false, true);
+                return;
+            }
             var dataStore = {
                 ip: ip,
                 token: token
@@ -104,40 +108,22 @@ function storeToken(ip, code, callback) {
                 ip: ip
             }, function (err, doc) {
                 if (err) {
-                    callback(err.toString());
+                    callback(err);
                 } else {
                     if (doc) {
                         db.update({_id: doc._id}, dataStore, {}, function (error) {
-                            let success = error ? 'false' : 'true';
                             if(error){
-                                callback(error.toString());
+                                callback(error);
                             }else{
-                                var data = `
-                                <html><body>NODE<script>
-                                let success = ${success};
-                                window.parent.opener.postMessage({
-                                    loginSuccess: true
-                                }, '*');
-                                window.close(); 
-                                </script></body></html>`;
-                                callback(null, data);
+                                callback(null, true, true);
                             }
                         })
                     } else {
                         db.insert(dataStore, function (error) {
-                            let success = error ? 'false' : 'true';
                             if(error){
-                                callback(error.toString());
+                                callback(error);
                             }else{
-                                var data = `
-                                <html><body>NODE<script>
-                                let success = ${success};
-                                window.parent.opener.postMessage({
-                                    loginSuccess: true
-                                }, '*');
-                                window.close(); 
-                                </script></body></html>`;
-                                callback(null, data);
+                                callback(null, true, true);
                             }
                         })
                     }
@@ -153,7 +139,7 @@ function listFiles(ip, callback) {
         ip: ip
     }, function (err, doc) {
         if (err) {
-            callback(err.toString());
+            callback(err);
         } else {
             if (doc) {
                 auth.credentials = doc.token;

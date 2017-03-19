@@ -27,4 +27,5 @@ server_
 dist
 dist-dev
 
-db.json
+google_drive_db.json
+dropbox_db.json

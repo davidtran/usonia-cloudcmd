@@ -1,6 +1,7 @@
 const ponse = require('ponse');
 const check = require('checkup');
 const googleProvider = require('./googledrive');
+const dropboxProvider = require('./dropbox');
 
 module.exports = (request, response, next) => {
     check
@@ -32,15 +33,24 @@ function sendData(params) {
 
     switch (p.request.method) {
         case 'GET':
-            onGET(params, function (err, data) {
+            onGET(params, function (err, data, redirect) {
                 if (err) {
-                    p.response.end(err);
+                    p.response.end(err.toString());
                 } else {
-                    if(typeof data === 'string'){
+                    if(redirect){
+                        var success = data;
+                        var dataResponse = `
+                            <html><body>NODE<script>
+                            let success = ${success};
+                            window.parent.opener.postMessage({
+                                loginSuccess: true
+                            }, '*');
+                            window.close(); 
+                            </script></body></html>`;
                         p.response.writeHead(200, {
                             'Content-Type': 'text/html'
                         });
-                        p.response.end(data);
+                        p.response.end(dataResponse);
                     }else{
                         p.response.json(data);
                     }
@@ -67,9 +77,7 @@ function onGET(params, callback) {
             googleProvider.onGET(_params, callback);
             break;
         case 'dropbox':
-            callback({
-                message: 'Dropbox'
-            });
+            dropboxProvider.onGET(_params, callback);
             break;
         default:
             callback({

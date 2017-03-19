@@ -27,14 +27,7 @@ function GoogleService() {
 GoogleService.prototype.onGET = function (params, callback) {
     var name = params.name;
     var req = params.request;
-    const clientIp = requestIp.getClientIp(req); 
-    console.log('req.connection.remoteAddress',req.connection.remoteAddress);
-    console.log('req.socket.remoteAddress',req.socket.remoteAddress);
-    console.log('newIP', clientIp);
-    var ip =
-        req.connection.remoteAddress ||
-        req.socket.remoteAddress ||
-        req.connection.socket.remoteAddress;
+    var ip = requestIp.getClientIp(req); 
 
     switch (name) {
         case 'authorize':
@@ -66,10 +59,7 @@ GoogleService.prototype.onGET = function (params, callback) {
 GoogleService.prototype.onPOST = function (params, callback) {
     var name = params.name;
     var req = params.request;
-    var ip =
-        req.connection.remoteAddress ||
-        req.socket.remoteAddress ||
-        req.connection.socket.remoteAddress;
+    var ip = requestIp.getClientIp(req); 
 
     switch (name) {
         case 'download':
@@ -114,10 +104,7 @@ function authorize(ip, callback) {
 GoogleService.prototype.refreshToken = function (params, callback) {
     var self = this;
     var req = params.request;
-    var ip =
-        req.connection.remoteAddress ||
-        req.socket.remoteAddress ||
-        req.connection.socket.remoteAddress;
+    var ip = requestIp.getClientIp(req); 
     db.findOne({
         ip: ip
     }, function (err, doc) {

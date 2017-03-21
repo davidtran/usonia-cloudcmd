@@ -7,6 +7,7 @@ var googleAuth = require('google-auth-library');
 var config = require('../json/google-drive-config.json');
 var path = require('path');
 const requestIp = require('request-ip');
+var ipaddr = require('ipaddr.js');
 var rootPath = path.join(__dirname, '/..');
 var SCOPES = ['https://www.googleapis.com/auth/drive', 'https://www.googleapis.com/auth/drive.file', 'https://www.googleapis.com/auth/drive.appdata'];
 
@@ -28,7 +29,7 @@ GoogleService.prototype.onGET = function (params, callback) {
     var name = params.name;
     var req = params.request;
     var ip = requestIp.getClientIp(req); 
-
+    ip = ipaddr.process(ip).toString();
     switch (name) {
         case 'authorize':
             authorize.call(this, ip, callback);
@@ -60,7 +61,7 @@ GoogleService.prototype.onPOST = function (params, callback) {
     var name = params.name;
     var req = params.request;
     var ip = requestIp.getClientIp(req); 
-
+    ip = ipaddr.process(ip).toString();
     switch (name) {
         case 'download':
             var id = req.body.id
@@ -105,6 +106,7 @@ GoogleService.prototype.refreshToken = function (params, callback) {
     var self = this;
     var req = params.request;
     var ip = requestIp.getClientIp(req); 
+    ip = ipaddr.process(ip).toString();
     db.findOne({
         ip: ip
     }, function (err, doc) {
@@ -196,7 +198,6 @@ function storeToken(ip, code, callback) {
 function listFilesRoot(ip, callback) {
     var self = this;
     var auth = this.oauth2Client;
-    console.log('ip', ip);
     db.findOne({
         ip: ip
     }, function (err, doc) {

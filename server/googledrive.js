@@ -286,21 +286,26 @@ function downloadFile(ip, id, _dest, callback) {
             if (doc) {
                 auth.credentials = doc.token;
                 var service = google.drive('v3');
-                var dest = fs.createWriteStream(_dest);
-                service.files.get({
-                        auth: auth,
-                        fileId: id,
-                        alt: 'media'
-                    })
-                    .on('end', function () {
-                        callback(null, {
-                            status: true
-                        });
-                    })
-                    .on('error', function (err) {
-                        callback('Error during download', err);
-                    })
-                    .pipe(dest);
+                try {
+                    var dest = fs.createWriteStream(_dest);
+                    service.files.get({
+                            auth: auth,
+                            fileId: id,
+                            alt: 'media'
+                        })
+                        .on('end', function () {
+                            callback(null, {
+                                status: true
+                            });
+                        })
+                        .on('error', function (err) {
+                            callback('Error during download', err);
+                        })
+                        .pipe(dest);    
+                } catch (error) {
+                    callback(error);
+                }
+                
             } else {
                 callback(null, {
                     status: false

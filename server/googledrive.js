@@ -121,25 +121,27 @@ GoogleService.prototype.refreshToken = function (params, callback) {
                             ip: ip
                         }, {
                             multi: true
-                        }, function () {
+                        }, function (deleteError) {
+                            console.log(deleteError);
                             callback();
-                            return;
+                        })
+                    }else{
+                        var dataStore = {
+                            token: newToken
+                        };
+                        db.update({
+                            ip: ip
+                        }, {
+                            $set: dataStore
+                        }, {}, function (errorUpdate) {
+                            if (errorUpdate) {
+                                console.log(errorUpdate)
+                                callback();
+                            } else {
+                                callback();
+                            }
                         })
                     }
-                    var dataStore = {
-                        token: newToken
-                    };
-                    db.update({
-                        ip: ip
-                    }, {
-                        $set: dataStore
-                    }, {}, function (errorUpdate) {
-                        if (errorUpdate) {
-                            callback();
-                        } else {
-                            callback();
-                        }
-                    })
                 })
             } else {
                 callback();
@@ -158,39 +160,39 @@ function storeToken(ip, code, callback) {
         } else {
             if (!token) {
                 callback(null, false, true);
-                return;
-            }
-            var dataStore = {
-                ip: ip,
-                token: token
-            };
-            db.findOne({
-                ip: ip
-            }, function (err, doc) {
-                if (err) {
-                    callback(err);
-                } else {
-                    if (doc) {
-                        db.update({
-                            _id: doc._id
-                        }, dataStore, {}, function (error) {
-                            if (error) {
-                                callback(error);
-                            } else {
-                                callback(null, true, true);
-                            }
-                        })
+            }else{
+                var dataStore = {
+                    ip: ip,
+                    token: token
+                };
+                db.findOne({
+                    ip: ip
+                }, function (err, doc) {
+                    if (err) {
+                        callback(err);
                     } else {
-                        db.insert(dataStore, function (error) {
-                            if (error) {
-                                callback(error);
-                            } else {
-                                callback(null, true, true);
-                            }
-                        })
+                        if (doc) {
+                            db.update({
+                                _id: doc._id
+                            }, dataStore, {}, function (error) {
+                                if (error) {
+                                    callback(error);
+                                } else {
+                                    callback(null, true, true);
+                                }
+                            })
+                        } else {
+                            db.insert(dataStore, function (error) {
+                                if (error) {
+                                    callback(error);
+                                } else {
+                                    callback(null, true, true);
+                                }
+                            })
+                        }
                     }
-                }
-            })
+                });
+            }
         }
     });
 }
@@ -216,13 +218,13 @@ function listFilesRoot(ip, callback) {
                 }, function (err, response) {
                     if (err) {
                         callback('The API returned an error: ' + err);
-                        return;
-                    }
-                    var files = response.files;
-                    if (files.length == 0) {
-                        callback('No files found.');
-                    } else {
-                        callback(null, files);
+                    }else{
+                        var files = response.files;
+                        if (files.length == 0) {
+                            callback('No files found.');
+                        } else {
+                            callback(null, files);
+                        }
                     }
                 });
 
@@ -255,13 +257,13 @@ function listFiles(ip, id, callback) {
                 }, function (err, response) {
                     if (err) {
                         callback('The API returned an error: ' + err);
-                        return;
-                    }
-                    var files = response.files;
-                    if (files.length == 0) {
-                        callback('No files found.');
-                    } else {
-                        callback(null, files);
+                    }else{
+                        var files = response.files;
+                        if (files.length == 0) {
+                            callback('No files found.');
+                        } else {
+                            callback(null, files);
+                        }
                     }
                 });
 

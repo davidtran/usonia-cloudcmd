@@ -94,12 +94,12 @@ function sendData(params, callback) {
         break;
     
     case 'PUT':
-        pullout(p.request, 'string', (error, body) => {
-            if (error)
-                return callback(error);
+        // pullout(p.request, 'string', (error, body) => {
+            // if (error)
+                // return callback(error);
             
-            onPUT(p.name, body, callback);
-        });
+            onPUT(p.name, p.request.body, callback);
+        // });
         break;
     }
 }
@@ -168,7 +168,7 @@ function onPUT(name, body, callback) {
         });
     
     const cmd = getCMD(name);
-    const files = json.parse(body);
+    const files = body;
     
     switch(cmd) {
     case 'mv':

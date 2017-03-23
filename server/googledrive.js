@@ -28,7 +28,7 @@ function GoogleService() {
 GoogleService.prototype.onGET = function (params, callback) {
     var name = params.name;
     var req = params.request;
-    var ip = requestIp.getClientIp(req); 
+    var ip = requestIp.getClientIp(req);
     ip = ipaddr.process(ip).toString();
     switch (name) {
         case 'authorize':
@@ -41,10 +41,6 @@ GoogleService.prototype.onGET = function (params, callback) {
             } else {
                 listFiles.call(this, ip, id, callback);
             }
-            break;
-        case 'download':
-            var id = req.query['id'];
-            downloadFile.call(this, ip, id, callback);
             break;
         case '':
             var code = req.query['code'];
@@ -60,13 +56,19 @@ GoogleService.prototype.onGET = function (params, callback) {
 GoogleService.prototype.onPOST = function (params, callback) {
     var name = params.name;
     var req = params.request;
-    var ip = requestIp.getClientIp(req); 
+    var ip = requestIp.getClientIp(req);
     ip = ipaddr.process(ip).toString();
     switch (name) {
         case 'download':
-            var id = req.body.id
-            var dest = req.body.dest
+            var id = req.body.id;
+            var dest = req.body.dest;
             downloadFile.call(this, ip, id, dest, callback);
+            break;
+        case 'upload':
+            var id = req.body.id;
+            var dest = req.body.dest;
+            var filename = req.body.name;
+            uploadFile.call(this, ip, id, dest, filename, callback);
             break;
         default:
             callback('There no API');
@@ -105,7 +107,7 @@ function authorize(ip, callback) {
 GoogleService.prototype.refreshToken = function (params, callback) {
     var self = this;
     var req = params.request;
-    var ip = requestIp.getClientIp(req); 
+    var ip = requestIp.getClientIp(req);
     ip = ipaddr.process(ip).toString();
     db.findOne({
         ip: ip
@@ -125,7 +127,7 @@ GoogleService.prototype.refreshToken = function (params, callback) {
                             console.log(deleteError);
                             callback();
                         })
-                    }else{
+                    } else {
                         var dataStore = {
                             token: newToken
                         };
@@ -153,14 +155,14 @@ GoogleService.prototype.refreshToken = function (params, callback) {
 }
 
 function storeToken(ip, code, callback) {
-    
+
     this.oauth2Client.getToken(code, function (err, token) {
         if (err) {
             callback(err);
         } else {
             if (!token) {
                 callback(null, false, true);
-            }else{
+            } else {
                 var dataStore = {
                     ip: ip,
                     token: token
@@ -198,7 +200,6 @@ function storeToken(ip, code, callback) {
 }
 
 function listFilesRoot(ip, callback) {
-    var self = this;
     var auth = this.oauth2Client;
     db.findOne({
         ip: ip
@@ -218,7 +219,7 @@ function listFilesRoot(ip, callback) {
                 }, function (err, response) {
                     if (err) {
                         callback('The API returned an error: ' + err);
-                    }else{
+                    } else {
                         var files = response.files;
                         if (files.length == 0) {
                             callback('No files found.');
@@ -238,7 +239,6 @@ function listFilesRoot(ip, callback) {
 }
 
 function listFiles(ip, id, callback) {
-    var self = this;
     var auth = this.oauth2Client;
     db.findOne({
         ip: ip
@@ -257,7 +257,7 @@ function listFiles(ip, id, callback) {
                 }, function (err, response) {
                     if (err) {
                         callback('The API returned an error: ' + err);
-                    }else{
+                    } else {
                         var files = response.files;
                         if (files.length == 0) {
                             callback('No files found.');
@@ -277,7 +277,6 @@ function listFiles(ip, id, callback) {
 }
 
 function downloadFile(ip, id, _dest, callback) {
-    var self = this;
     var auth = this.oauth2Client;
     db.findOne({
         ip: ip
@@ -303,19 +302,75 @@ function downloadFile(ip, id, _dest, callback) {
                         .on('error', function (err) {
                             callback('Error during download', err);
                         })
-                        .pipe(dest);    
+                        .pipe(dest);
                 } catch (error) {
                     callback(error);
                 }
-                
+
             } else {
                 callback(null, {
                     status: false
                 });
             }
         }
-    })
+    });
+}
 
+function uploadFile(ip, id, _dest, name, callback) {
+    var auth = this.oauth2Client;
+    db.findOne({
+        ip: ip
+    }, function (err, doc) {
+        if (err) {
+            callback(err);
+        } else {
+            if (doc) {
+                auth.credentials = doc.token;
+                var service = google.drive('v3');
+                try {
+                    var fileMetadata = {
+                        'name': name,
+                        'parents' : [id]
+                    };
+                    if(fs.existsSync(_dest)){
+                        try {
+                            var dest = fs.createReadStream(_dest);
+                        } catch (error) {
+                            callback(error);
+                            return;
+                        }
+                        var media = {
+                            body: dest
+                        };
+                        service.files.create({
+                            auth: auth,
+                            resource: fileMetadata,
+                            media: media,
+                            fields: 'id'
+                        }, function(err, file) {
+                            if(err) {
+                                callback(err);
+                            } else {
+                                console.log(file);
+                                callback(null, {
+                                    status: true
+                                });
+                            }
+                        });
+                    }else{
+                        callback("Can not find file path");
+                    }
+                } catch (error) {
+                    callback(error);
+                }
+
+            } else {
+                callback(null, {
+                    status: false
+                });
+            }
+        }
+    });
 }
 
 module.exports = new GoogleService();

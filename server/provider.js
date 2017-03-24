@@ -2,7 +2,8 @@ const ponse = require('ponse');
 const check = require('checkup');
 const googleProvider = require('./googledrive');
 const dropboxProvider = require('./dropbox');
-
+const requestIp = require('request-ip');
+var ipaddr = require('ipaddr.js');
 module.exports = (request, response, next) => {
     check
         .type('next', next, 'function')
@@ -24,20 +25,24 @@ module.exports = (request, response, next) => {
         response,
         name: name.replace(apiURL, '') || '/',
     };
-
-    sendData(params);
+    var ip = requestIp.getClientIp(request);
+    ip = ipaddr.process(ip).toString();
+    if (ip = '::1') {
+        ip = '127.0.0.1';
+    }
+    sendData(params, ip);
 };
 
-function sendData(params) {
+function sendData(params, ip) {
     const p = params;
 
     switch (p.request.method) {
         case 'GET':
-            onGET(params, function (err, data, redirect) {
+            onGET(params, ip, function (err, data, redirect) {
                 if (err) {
                     p.response.end(err.toString());
                 } else {
-                    if(redirect){
+                    if (redirect) {
                         var success = data;
                         var dataResponse = `
                             <html><body>NODE<script>
@@ -51,20 +56,20 @@ function sendData(params) {
                             'Content-Type': 'text/html'
                         });
                         p.response.end(dataResponse);
-                    }else{
+                    } else {
                         p.response.json(data);
                     }
                 }
             });
             break;
         case 'POST':
-            onPOST(params, function (err, data) {
-                if(err){
+            onPOST(params, ip, function (err, data) {
+                if (err) {
                     p.response.end(err.toString());
-                }else{
+                } else {
                     p.response.json(data);
                 }
-            })
+            });
             break;
         default:
             p.response.end('Not Found');
@@ -72,7 +77,7 @@ function sendData(params) {
     }
 }
 
-function onGET(params, callback) {
+function onGET(params, ip, callback) {
     var name = params.name;
     var listParams = name.split('/');
     var providerName = listParams[1];
@@ -83,12 +88,12 @@ function onGET(params, callback) {
     };
     switch (providerName) {
         case 'google':
-            googleProvider.refreshToken(_params, function (error) {
-                googleProvider.onGET(_params, callback);
-            })
+            googleProvider.refreshToken(_params, ip, function (error) {
+                googleProvider.onGET(_params, ip, callback);
+            });
             break;
         case 'dropbox':
-            dropboxProvider.onGET(_params, callback);
+            dropboxProvider.onGET(_params, ip, callback);
             break;
         default:
             callback({
@@ -98,7 +103,7 @@ function onGET(params, callback) {
     }
 }
 
-function onPOST(params, callback) {
+function onPOST(params, ip, callback) {
     var name = params.name;
     var listParams = name.split('/');
     var providerName = listParams[1];
@@ -109,14 +114,12 @@ function onPOST(params, callback) {
     };
     switch (providerName) {
         case 'google':
-            googleProvider.refreshToken(_params, function (error) {
-                googleProvider.onPOST(_params, callback);
+            googleProvider.refreshToken(_params, ip, function (error) {
+                googleProvider.onPOST(_params, ip, callback);
             })
             break;
         case 'dropbox':
-            callback({
-                message: 'Dropbox'
-            });
+            dropboxProvider.onPOST(_params, ip, callback);
             break;
         default:
             callback({

@@ -1,13 +1,9 @@
 var fs = require('fs');
-var files = require('files-io');
-var http = require('http');
-const https = require('https');
 var google = require('googleapis');
 var googleAuth = require('google-auth-library');
 var config = require('../json/google-drive-config.json');
 var path = require('path');
-const requestIp = require('request-ip');
-var ipaddr = require('ipaddr.js');
+
 var rootPath = path.join(__dirname, '/..');
 var SCOPES = ['https://www.googleapis.com/auth/drive', 'https://www.googleapis.com/auth/drive.file', 'https://www.googleapis.com/auth/drive.appdata'];
 
@@ -23,13 +19,12 @@ function GoogleService() {
     var redirectUrl = process.env.NODE_HOSTNAME ? config.installed.redirect_uris[1] : config.installed.redirect_uris[0];
     var auth = new googleAuth();
     this.oauth2Client = new auth.OAuth2(clientId, clientSecret, redirectUrl);
-};
+}
 
-GoogleService.prototype.onGET = function (params, callback) {
+GoogleService.prototype.onGET = function (params, ip, callback) {
     var name = params.name;
     var req = params.request;
-    var ip = requestIp.getClientIp(req);
-    ip = ipaddr.process(ip).toString();
+
     switch (name) {
         case 'authorize':
             authorize.call(this, ip, callback);
@@ -44,7 +39,6 @@ GoogleService.prototype.onGET = function (params, callback) {
             break;
         case '':
             var code = req.query['code'];
-            // code = code.slice(0, -1);
             storeToken.call(this, ip, code, callback);
             break;
         default:
@@ -53,11 +47,9 @@ GoogleService.prototype.onGET = function (params, callback) {
     }
 }
 
-GoogleService.prototype.onPOST = function (params, callback) {
+GoogleService.prototype.onPOST = function (params, ip, callback) {
     var name = params.name;
     var req = params.request;
-    var ip = requestIp.getClientIp(req);
-    ip = ipaddr.process(ip).toString();
     switch (name) {
         case 'download':
             var id = req.body.id;
@@ -104,11 +96,8 @@ function authorize(ip, callback) {
     })
 }
 
-GoogleService.prototype.refreshToken = function (params, callback) {
+GoogleService.prototype.refreshToken = function (params, ip, callback) {
     var self = this;
-    var req = params.request;
-    var ip = requestIp.getClientIp(req);
-    ip = ipaddr.process(ip).toString();
     db.findOne({
         ip: ip
     }, function (err, doc) {
@@ -137,25 +126,22 @@ GoogleService.prototype.refreshToken = function (params, callback) {
                             $set: dataStore
                         }, {}, function (errorUpdate) {
                             if (errorUpdate) {
-                                console.log(errorUpdate)
+                                console.log(errorUpdate);
                                 callback();
                             } else {
                                 callback();
                             }
-                        })
+                        });
                     }
-                })
+                });
             } else {
                 callback();
             }
         }
-    })
-
-
-}
+    });
+};
 
 function storeToken(ip, code, callback) {
-
     this.oauth2Client.getToken(code, function (err, token) {
         if (err) {
             callback(err);
@@ -182,7 +168,7 @@ function storeToken(ip, code, callback) {
                                 } else {
                                     callback(null, true, true);
                                 }
-                            })
+                            });
                         } else {
                             db.insert(dataStore, function (error) {
                                 if (error) {
@@ -190,13 +176,30 @@ function storeToken(ip, code, callback) {
                                 } else {
                                     callback(null, true, true);
                                 }
-                            })
+                            });
                         }
                     }
                 });
             }
         }
     });
+}
+
+function formatFile(files) {
+    var listData = [];
+    for (var key in files) {
+        var element = files[key];
+        var mimeType = element.mimeType == 'application/vnd.google-apps.folder' ? 'folder' : 'file';
+        var data = {
+            id: element.id,
+            name: element.name,
+            mimeType: mimeType,
+            modifiedTime: element.modifiedTime,
+            size: element.size
+        };
+        listData.push(data);
+    }
+    return listData;
 }
 
 function listFilesRoot(ip, callback) {
@@ -215,7 +218,7 @@ function listFilesRoot(ip, callback) {
                     auth: auth,
                     pageSize: 100,
                     q: "'root' in parents and 'me' in owners",
-                    fields: "nextPageToken, files(id, name, size, kind, modifiedTime, thumbnailLink, webViewLink, iconLink, ownedByMe, parents, mimeType)"
+                    fields: "files(id, name, size, kind, modifiedTime, size, parents, mimeType)"
                 }, function (err, response) {
                     if (err) {
                         callback('The API returned an error: ' + err);
@@ -224,7 +227,7 @@ function listFilesRoot(ip, callback) {
                         if (files.length == 0) {
                             callback('No files found.');
                         } else {
-                            callback(null, files);
+                            callback(null, formatFile(files));
                         }
                     }
                 });
@@ -235,7 +238,7 @@ function listFilesRoot(ip, callback) {
                 });
             }
         }
-    })
+    });
 }
 
 function listFiles(ip, id, callback) {
@@ -253,7 +256,7 @@ function listFiles(ip, id, callback) {
                     auth: auth,
                     pageSize: 100,
                     q: `'${id}' in parents and 'me' in owners`,
-                    fields: "nextPageToken, files(id, name, size, kind, modifiedTime, thumbnailLink, webViewLink, iconLink, ownedByMe, parents, mimeType)"
+                    fields: "files(id, name, size, kind, modifiedTime, thumbnailLink, webViewLink, iconLink, ownedByMe, parents, mimeType)"
                 }, function (err, response) {
                     if (err) {
                         callback('The API returned an error: ' + err);
@@ -262,7 +265,7 @@ function listFiles(ip, id, callback) {
                         if (files.length == 0) {
                             callback('No files found.');
                         } else {
-                            callback(null, files);
+                            callback(null, formatFile(files));
                         }
                     }
                 });
@@ -330,9 +333,9 @@ function uploadFile(ip, id, _dest, name, callback) {
                 try {
                     var fileMetadata = {
                         'name': name,
-                        'parents' : [id]
+                        'parents': [id]
                     };
-                    if(fs.existsSync(_dest)){
+                    if (fs.existsSync(_dest)) {
                         try {
                             var dest = fs.createReadStream(_dest);
                         } catch (error) {
@@ -347,8 +350,8 @@ function uploadFile(ip, id, _dest, name, callback) {
                             resource: fileMetadata,
                             media: media,
                             fields: 'id'
-                        }, function(err, file) {
-                            if(err) {
+                        }, function (err, file) {
+                            if (err) {
                                 callback(err);
                             } else {
                                 console.log(file);
@@ -357,7 +360,7 @@ function uploadFile(ip, id, _dest, name, callback) {
                                 });
                             }
                         });
-                    }else{
+                    } else {
                         callback("Can not find file path");
                     }
                 } catch (error) {

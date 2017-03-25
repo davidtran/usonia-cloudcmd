@@ -107,13 +107,11 @@ GoogleService.prototype.refreshToken = function (params, ip, callback) {
             if (doc) {
                 self.oauth2Client.refreshToken_(doc.token.access_token, function (error, newToken) {
                     if (error) {
-                        console.log(error);
                         db.remove({
                             ip: ip
                         }, {
                             multi: true
                         }, function (deleteError) {
-                            console.log(deleteError);
                             callback();
                         })
                     } else {
@@ -126,7 +124,6 @@ GoogleService.prototype.refreshToken = function (params, ip, callback) {
                             $set: dataStore
                         }, {}, function (errorUpdate) {
                             if (errorUpdate) {
-                                console.log(errorUpdate);
                                 callback();
                             } else {
                                 callback();
@@ -211,7 +208,6 @@ function listFilesRoot(ip, callback) {
             callback(err);
         } else {
             if (doc) {
-                console.log('doc', doc);
                 auth.credentials = doc.token;
                 var service = google.drive('v3');
                 service.files.list({
@@ -354,7 +350,6 @@ function uploadFile(ip, id, _dest, name, callback) {
                             if (err) {
                                 callback(err);
                             } else {
-                                console.log(file);
                                 callback(null, {
                                     status: true
                                 });

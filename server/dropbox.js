@@ -59,7 +59,7 @@ DropboxService.prototype.onPOST = function (params, ip, callback) {
             break;
         case 'upload':
             var path = req.body.path;
-            var source = req.body.souce;
+            var source = req.body.source;
             var name = req.body.name;
             uploadFile.call(this, ip, path, source, name, callback);
             break;

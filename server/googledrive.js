@@ -58,9 +58,9 @@ GoogleService.prototype.onPOST = function (params, ip, callback) {
             break;
         case 'upload':
             var id = req.body.id;
-            var dest = req.body.dest;
+            var source = req.body.source;
             var filename = req.body.name;
-            uploadFile.call(this, ip, id, dest, filename, callback);
+            uploadFile.call(this, ip, id, source, filename, callback);
             break;
         default:
             callback('There no API');
@@ -316,7 +316,7 @@ function downloadFile(ip, id, _dest, callback) {
     });
 }
 
-function uploadFile(ip, id, _dest, name, callback) {
+function uploadFile(ip, id, _source, name, callback) {
     var auth = this.oauth2Client;
     db.findOne({
         ip: ip
@@ -332,9 +332,9 @@ function uploadFile(ip, id, _dest, name, callback) {
                         'name': name,
                         'parents': [id]
                     };
-                    if (fs.existsSync(_dest)) {
+                    if (fs.existsSync(_source)) {
                         try {
-                            var dest = fs.createReadStream(_dest);
+                            var dest = fs.createReadStream(_source);
                         } catch (error) {
                             callback(error);
                             return;

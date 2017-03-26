@@ -59,8 +59,9 @@ DropboxService.prototype.onPOST = function (params, ip, callback) {
             break;
         case 'upload':
             var path = req.body.path;
-            var dest = req.body.dest;
-            uploadFile.call(this, ip, path, dest, callback);
+            var source = req.body.souce;
+            var name = req.body.name;
+            uploadFile.call(this, ip, path, source, name, callback);
             break;
         default:
             callback('There no API');
@@ -281,7 +282,7 @@ function downloadFile(ip, path, _dest, callback) {
     });
 }
 
-function uploadFile(ip, path, _dest, callback) {
+function uploadFile(ip, path, _source, name, callback) {
     db.findOne({
         ip: ip
     }, function (err, doc) {
@@ -292,16 +293,16 @@ function uploadFile(ip, path, _dest, callback) {
                 var dbx = new Dropbox({
                     accessToken: doc.token
                 });
-                if (fs.existsSync(_dest)) {
+                if (fs.existsSync(_source)) {
                     try {
-                        var dest = fs.readFileSync(_dest);
+                        var dest = fs.readFileSync(_source);
                     } catch (error) {
                         callback(error);
                         return;
                     }
                     dbx.filesUpload({
                             contents: dest,
-                            path: path,
+                            path: path + '/' + name,
                             autorename: true
                         })
                         .then(function (response) {

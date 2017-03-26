@@ -2,14 +2,14 @@ var fs = require('fs');
 var google = require('googleapis');
 var googleAuth = require('google-auth-library');
 var config = require('../json/google-drive-config.json');
-var path = require('path');
+var _path = require('path');
 
-var rootPath = path.join(__dirname, '/..');
+var rootPath = _path.join(__dirname, '/..');
 var SCOPES = ['https://www.googleapis.com/auth/drive', 'https://www.googleapis.com/auth/drive.file', 'https://www.googleapis.com/auth/drive.appdata'];
 
 var Datastore = require('nedb');
 var db = new Datastore({
-    filename: path.join(rootPath, '/google_drive_db.json'),
+    filename: _path.join(rootPath, '/google_drive_db.json'),
     autoload: true
 });
 
@@ -144,7 +144,7 @@ function storeToken(ip, code, callback) {
             callback(err);
         } else {
             if (!token) {
-                callback(null, false, true);
+                callback(null, false, 'redirect');
             } else {
                 var dataStore = {
                     ip: ip,
@@ -163,7 +163,7 @@ function storeToken(ip, code, callback) {
                                 if (error) {
                                     callback(error);
                                 } else {
-                                    callback(null, true, true);
+                                    callback(null, true, 'redirect');
                                 }
                             });
                         } else {
@@ -171,7 +171,7 @@ function storeToken(ip, code, callback) {
                                 if (error) {
                                     callback(error);
                                 } else {
-                                    callback(null, true, true);
+                                    callback(null, true, 'redirect');
                                 }
                             });
                         }
@@ -192,7 +192,8 @@ function formatFile(files) {
             name: element.name,
             mimeType: mimeType,
             modifiedTime: element.modifiedTime,
-            size: element.size
+            size: element.size,
+            thumbnailLink: element.thumbnailLink
         };
         listData.push(data);
     }
@@ -214,7 +215,7 @@ function listFilesRoot(ip, callback) {
                     auth: auth,
                     pageSize: 100,
                     q: "'root' in parents and 'me' in owners",
-                    fields: "files(id, name, size, kind, modifiedTime, size, parents, mimeType)"
+                    fields: "files(id, name, size, kind, modifiedTime, size, parents, mimeType, thumbnailLink)"
                 }, function (err, response) {
                     if (err) {
                         callback('The API returned an error: ' + err);

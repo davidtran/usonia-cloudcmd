@@ -38,24 +38,38 @@ function sendData(params, ip) {
 
     switch (p.request.method) {
         case 'GET':
-            onGET(params, ip, function (err, data, redirect) {
+            onGET(params, ip, function (err, data, type) {
                 if (err) {
                     p.response.end(err.toString());
                 } else {
-                    if (redirect) {
-                        var success = data;
-                        var dataResponse = `
-                            <html><body>NODE<script>
-                            let success = ${success};
-                            window.parent.opener.postMessage({
-                                loginSuccess: true
-                            }, '*');
-                            window.close(); 
-                            </script></body></html>`;
-                        p.response.writeHead(200, {
-                            'Content-Type': 'text/html'
-                        });
-                        p.response.end(dataResponse);
+                    if (type) {
+                        switch (type) {
+                            case 'redirect':
+                                var success = data;
+                                var dataResponse = `
+                                    <html><body>NODE<script>
+                                    let success = ${success};
+                                    window.parent.opener.postMessage({
+                                        loginSuccess: true
+                                    }, '*');
+                                    window.close(); 
+                                    </script></body></html>`;
+                                p.response.writeHead(200, {
+                                    'Content-Type': 'text/html'
+                                });
+                                p.response.end(dataResponse);
+                                break;
+                            case 'image':
+                                p.response.writeHead(200, {
+                                    'Content-Type': 'image/png'
+                                });
+                                p.response.end(data, 'binary');
+                                break;
+                            default:
+                                p.response.end();
+                                break;
+                        }
+
                     } else {
                         p.response.json(data);
                     }

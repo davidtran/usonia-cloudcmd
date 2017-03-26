@@ -2,8 +2,8 @@ var fs = require('fs');
 var node_dropbox = require('node-dropbox');
 var Dropbox = require('dropbox');
 var config = require('../json/dropbox-config.json');
-var path = require('path');
-var rootPath = path.join(__dirname, '/..');
+var _path = require('path');
+var rootPath = _path.join(__dirname, '/..');
 
 var app_key = config.installed.app_key;
 var secret = config.installed.secret;
@@ -11,7 +11,7 @@ var redirectUrl = process.env.NODE_HOSTNAME ? config.installed.redirect_uris[1] 
 
 var Datastore = require('nedb');
 var db = new Datastore({
-    filename: path.join(rootPath, '/dropbox_db.json'),
+    filename: _path.join(rootPath, '/dropbox_db.json'),
     autoload: true
 });
 
@@ -27,11 +27,16 @@ DropboxService.prototype.onGET = function (params, ip, callback) {
             break;
         case 'files':
             var path = req.query['path'];
+            var host = params.request.protocol + '://' + params.request.get('host');
             if (!path) {
-                listFiles.call(this, ip, '', callback);
+                listFiles.call(this, ip, host, '', callback);
             } else {
-                listFiles.call(this, ip, path, callback);
+                listFiles.call(this, ip, host, path, callback);
             }
+            break;
+        case 'thumbnail':
+            var path = req.query['path'];
+            getThumbnail.call(this, ip, path, callback);
             break;
         case '':
             var code = req.query['code'];
@@ -94,7 +99,7 @@ function storeToken(ip, code, callback) {
         } else {
             var access_token = body.access_token;
             if (!access_token) {
-                callback(null, false, true);
+                callback(null, false, 'redirect');
             } else {
                 var dataStore = {
                     ip: ip,
@@ -113,7 +118,7 @@ function storeToken(ip, code, callback) {
                                 if (error) {
                                     callback(error);
                                 } else {
-                                    callback(null, true, true);
+                                    callback(null, true, 'redirect');
                                 }
                             });
                         } else {
@@ -121,7 +126,7 @@ function storeToken(ip, code, callback) {
                                 if (error) {
                                     callback(error);
                                 } else {
-                                    callback(null, true, true);
+                                    callback(null, true, 'redirect');
                                 }
                             });
                         }
@@ -133,7 +138,7 @@ function storeToken(ip, code, callback) {
 }
 
 
-function listFiles(ip, path, callback) {
+function listFiles(ip, host, path, callback) {
     db.findOne({
         ip: ip
     }, function (err, doc) {
@@ -149,7 +154,7 @@ function listFiles(ip, path, callback) {
                     })
                     .then(function (response) {
                         if (response) {
-                            callback(null, formatFile(response.entries));
+                            callback(null, formatFile(response.entries, host));
                         } else {
                             callback('No files found.');
                         }
@@ -167,21 +172,68 @@ function listFiles(ip, path, callback) {
 }
 
 
-function formatFile(files) {
+function formatFile(files, host) {
     var listData = [];
     for (var key in files) {
         var element = files[key];
+        var ext = element['path_lower'].substr(element['path_lower'].length - 3);
+        var listImageTypes = ['jpg', 'jpeg', 'png', 'tiff', 'tif', 'gif', 'bmp'];
+        var thumbnailLink = null;
+        if (element['.tag'] === 'file' && listImageTypes.indexOf(ext) > -1) {
+            thumbnailLink = host + '/provider/dropbox/thumbnail?path=' +  element['path_lower'];
+        }
         var data = {
             id: element.id,
             name: element.name,
             mimeType: element['.tag'],
             modifiedTime: element['server_modified'],
             size: element.size,
-            path: element['path_lower']
+            path: element['path_lower'],
+            thumbnailLink: thumbnailLink
         };
         listData.push(data);
     }
     return listData;
+}
+
+function getThumbnail(ip, path, callback) {
+    db.findOne({
+        ip: ip
+    }, function (err, doc) {
+        if (err) {
+            callback(err);
+        } else {
+            if (doc) {
+                var dbx = new Dropbox({
+                    accessToken: doc.token
+                });
+                var ext = path.substr(path.length - 3);
+                var listImageTypes = ['jpg', 'jpeg', 'png', 'tiff', 'tif', 'gif', 'bmp'];
+                if (listImageTypes.indexOf(ext) > -1) {
+                    dbx.filesGetThumbnail({
+                            path: path,
+                            size: 'w640h480'
+                        })
+                        .then(function (response) {
+                            if (response) {
+                                callback(null, response.fileBinary, 'image');
+                            } else {
+                                callback('No files found.');
+                            }
+                        })
+                        .catch(function (error) {
+                            callback(error);
+                        });
+                } else {
+                    callback(null, null, 'image');
+                }
+            } else {
+                callback(null, {
+                    status: false
+                });
+            }
+        }
+    });
 }
 
 function downloadFile(ip, path, _dest, callback) {

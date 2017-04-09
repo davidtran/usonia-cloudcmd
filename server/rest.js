@@ -223,11 +223,11 @@ function onPUT(name, body, callback) {
 
             break;
 
-        case 'extract':
-            if (!files.data)
+        case 'save':
+            if (!files.data || !files.path)
                 return callback(body);
 
-            extract(files.data, callback);
+            save(files.data, files.path, callback);
 
             break;
 
@@ -263,16 +263,20 @@ function extract(from, to, fn) {
     operation('extract', from, to, fn);
 }
 
-function save(data, path, fn) {
-    fs.writeFile(path, data, function (error) {
-        if(!error){
-            callback(null, {
-                status: true
-            })
-        }else{
-            callback(error);
-        }
-    });
+function save(data, _path, fn) {
+    try {
+        fs.writeFile(_path, data, function (error) {
+            if(!error){
+                const name = path.basename(_path);
+                const msg = formatMsg('save', name);
+                fn(null, msg);
+            }else{
+                fn(error);
+            }
+        });
+    } catch (error) {
+        fn(error);
+    }
 }
 
 function getPacker(operation) {

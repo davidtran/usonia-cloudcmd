@@ -224,7 +224,7 @@ function onPUT(name, body, callback) {
             break;
 
         case 'save':
-            if (!files.data || !files.path)
+            if (!files.path)
                 return callback(body);
 
             save(files.data, files.path, callback);

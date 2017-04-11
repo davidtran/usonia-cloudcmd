@@ -7,8 +7,8 @@ var rootPath = _path.join(__dirname, '/..');
 
 var app_key = config.installed.app_key;
 var secret = config.installed.secret;
-var redirectUrl = process.env.NODE_HOSTNAME ? config.installed.redirect_uris[1] : config.installed.redirect_uris[0];
-
+var host = process.env.NODE_HOSTNAME || 'http://localhost:8000';
+var redirectUrl = host + config.installed.redirect;
 var Datastore = require('nedb');
 var db = new Datastore({
     filename: _path.join(rootPath, '/dropbox_db.json'),

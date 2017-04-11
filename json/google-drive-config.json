@@ -6,6 +6,6 @@
         "token_uri": "https://accounts.google.com/o/oauth2/token",
         "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
         "client_secret": "ITAsDIYaWxJSx1lJ6XkeiZ0o",
-        "redirect_uris": ["http://localhost:8000/provider/google", "https://usonia-cloudcmd.herokuapp.com/provider/google"]
+        "redirect": "/provider/google"
     }
 }

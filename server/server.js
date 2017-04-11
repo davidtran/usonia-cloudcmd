@@ -40,7 +40,7 @@ module.exports = (options) => {
     if (logger)
         app.use(logger('dev'));
     
-    var whitelist = [process.env.SITE_URL, process.env.API_URL, process.env.HEROKU_PAGE];
+    var whitelist = [process.env.SITE_URL, process.env.API_URL, process.env.HEROKU_PAGE, process.env.REACT_APP_URL];
     console.log(whitelist);
     var corsOptionsDelegate = function (req, callback) {
         var corsOptions;

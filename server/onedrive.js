@@ -1,5 +1,4 @@
 var fs = require('fs');
-var OneDriveAuth = require('onedrive-auth');
 var config = require('../json/onedrive-config.json');
 var _path = require('path');
 var request = require('request');

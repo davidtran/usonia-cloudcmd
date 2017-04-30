@@ -162,6 +162,8 @@
     "nsp": "^2.2.1",
     "nyc": "^10.1.2",
     "omnes": "^1.0.3",
+    "onedrive-api": "0.0.9",
+    "onedrive-auth": "^1.1.1",
     "onezip": "^1.0.5",
     "opn": "^4.0.1",
     "os-homedir": "^1.0.0",

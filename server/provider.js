@@ -2,8 +2,10 @@ const ponse = require('ponse');
 const check = require('checkup');
 const googleProvider = require('./googledrive');
 const dropboxProvider = require('./dropbox');
+const onedriveProvider = require('./onedrive');
 const requestIp = require('request-ip');
 var ipaddr = require('ipaddr.js');
+
 module.exports = (request, response, next) => {
     check
         .type('next', next, 'function')
@@ -109,6 +111,11 @@ function onGET(params, ip, callback) {
         case 'dropbox':
             dropboxProvider.onGET(_params, ip, callback);
             break;
+        case 'onedrive':
+            onedriveProvider.refreshToken(_params, ip, function (error) {
+                onedriveProvider.onGET(_params, ip, callback);
+            });
+            break;
         default:
             callback({
                 message: 'Not Found'
@@ -134,6 +141,9 @@ function onPOST(params, ip, callback) {
             break;
         case 'dropbox':
             dropboxProvider.onPOST(_params, ip, callback);
+            break;
+        case 'onedrive':
+            onedriveProvider.onPOST(_params, ip, callback);
             break;
         default:
             callback({

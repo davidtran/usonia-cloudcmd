@@ -1,0 +1,8 @@
+{
+    "installed": {
+        "app_key": "5bfadd6f-daa5-4320-ba47-6701d3d9ffa3",
+        "secret": "Eoot7sy0Gq5vzJFzYZ6WZSh",
+        "scopes": "onedrive.readwrite wl.signin wl.offline_access",
+        "redirect": "/provider/onedrive"
+    }
+}

@@ -6,7 +6,6 @@ var rootPath = _path.join(__dirname, '/..');
 var rootURL = "https://graph.microsoft.com/v1.0";
 var Datastore = require('nedb');
 var oneDriveAPI = require('onedrive-api');
-var fsAccess = require('fs-access');
 var _ = require('lodash');
 var db = new Datastore({
     filename: _path.join(rootPath, '/onedrive_db.json'),

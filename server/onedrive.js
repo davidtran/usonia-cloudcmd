@@ -6,6 +6,8 @@ var rootPath = _path.join(__dirname, '/..');
 var rootURL = "https://graph.microsoft.com/v1.0";
 var Datastore = require('nedb');
 var oneDriveAPI = require('onedrive-api');
+var fsAccess = require('fs-access');
+var _ = require('lodash');
 var db = new Datastore({
     filename: _path.join(rootPath, '/onedrive_db.json'),
     autoload: true
@@ -158,7 +160,7 @@ function storeToken(ip, code, callback) {
         }
     }, function(error, res, body) {
         var token = JSON.parse(body);
-        if (!token || (token && token.error)) {
+        if (error || !token || (token && token.error)) {
             callback(null, false, 'redirect');
         } else {
             var dataStore = {
@@ -282,25 +284,34 @@ function downloadFile(ip, id, _dest, callback) {
             callback(err);
         } else {
             if (doc) {
-                try {
-                    var dest = fs.createWriteStream(_dest);
-                    oneDriveAPI.items.download({
-                        accessToken: doc.token.access_token,
-                        itemId: id
-                    })
-                    .on('end', function() {
-                        callback(null, {
-                            status: true
-                        });
-                    })
-                    .on('error', function(err) {
-                        callback('Error during download', err);
-                    })
-                    .pipe(dest);
-                } catch (error) {
-                    callback(error);
-                }
-
+                var folder = _.initial(_dest.split('/')).join('/');
+                fs.access(folder, fs.W_OK, function (err) {
+                    if (err) {
+                        callback('Can\'t not save to this folder');
+                    }else{
+                        try {
+                            var dest = fs.createWriteStream(_dest);
+                            var options = {
+                                method: 'GET',
+                                uri: 'https://api.onedrive.com/v1.0/drive/items/' + id + "/content",
+                                headers: {
+                                Authorization: "Bearer " + doc.token.access_token
+                                },
+                            };
+                            request(options, function (error, res, body) {
+                                if(error){
+                                    callback('Error during download');
+                                }else{
+                                    callback(null, {
+                                        status: true
+                                    });
+                                }
+                            }).pipe(dest);
+                        } catch (error) {
+                            callback(error);
+                        }
+                    }
+                });
             } else {
                 callback(null, {
                     status: false

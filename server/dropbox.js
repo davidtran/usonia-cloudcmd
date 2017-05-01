@@ -245,34 +245,42 @@ function downloadFile(ip, path, _dest, callback) {
             callback(err);
         } else {
             if (doc) {
-                var dbx = new Dropbox({
-                    accessToken: doc.token
-                });
-                dbx.filesDownload({
-                        path: path
-                    })
-                    .then(function (response) {
-                        if (response) {
-                            try {
-                                fs.writeFile(_dest, response.fileBinary, 'binary', function (error) {
-                                    if (error) {
-                                        callback(error);
-                                    } else {
-                                        callback(null, {
-                                            status: true
+                var folder = _.initial(_dest.split('/')).join('/');
+                fs.access(folder, fs.W_OK, function (err) {
+                    if(err){
+                        callback('Can\'t not save to this folder');
+                    }else{
+                        var dbx = new Dropbox({
+                            accessToken: doc.token
+                        });
+                        dbx.filesDownload({
+                                path: path
+                            })
+                            .then(function (response) {
+                                if (response) {
+                                    try {
+                                        fs.writeFile(_dest, response.fileBinary, 'binary', function (error) {
+                                            if (error) {
+                                                callback(error);
+                                            } else {
+                                                callback(null, {
+                                                    status: true
+                                                });
+                                            }
                                         });
+                                    } catch (error) {
+                                        callback(error);
                                     }
-                                });
-                            } catch (error) {
+                                } else {
+                                    callback('No files found.');
+                                }
+                            })
+                            .catch(function (error) {
                                 callback(error);
-                            }
-                        } else {
-                            callback('No files found.');
-                        }
-                    })
-                    .catch(function (error) {
-                        callback(error);
-                    });
+                            });
+                    }
+                })
+                
             } else {
                 callback(null, {
                     status: false

@@ -286,28 +286,34 @@ function downloadFile(ip, id, _dest, callback) {
             callback(err);
         } else {
             if (doc) {
-                auth.credentials = doc.token;
-                var service = google.drive('v3');
-                try {
-                    var dest = fs.createWriteStream(_dest);
-                    service.files.get({
-                            auth: auth,
-                            fileId: id,
-                            alt: 'media'
-                        })
-                        .on('end', function () {
-                            callback(null, {
-                                status: true
-                            });
-                        })
-                        .on('error', function (err) {
-                            callback('Error during download', err);
-                        })
-                        .pipe(dest);
-                } catch (error) {
-                    callback(error);
-                }
-
+                var folder = _.initial(_dest.split('/')).join('/');
+                fs.access(folder, fs.W_OK, function (err) {
+                    if(err){
+                        callback('Can\'t not save to this folder');
+                    }else{
+                        auth.credentials = doc.token;
+                        var service = google.drive('v3');
+                        try {
+                            var dest = fs.createWriteStream(_dest);
+                            service.files.get({
+                                    auth: auth,
+                                    fileId: id,
+                                    alt: 'media'
+                                })
+                                .on('end', function () {
+                                    callback(null, {
+                                        status: true
+                                    });
+                                })
+                                .on('error', function (err) {
+                                    callback('Error during download', err);
+                                })
+                                .pipe(dest);
+                        } catch (error) {
+                            callback(error);
+                        }
+                    }
+                })
             } else {
                 callback(null, {
                     status: false

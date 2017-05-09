@@ -66,6 +66,10 @@ module.exports = (request, response, next) => {
 
         if (options.query)
             params.query = options.query;
+        if(options.rest){
+            response.json(data);
+            return;
+        }
 
         if (error)
             return ponse.sendError(error, params);
@@ -94,13 +98,9 @@ function sendData(params, callback) {
             break;
 
         case 'PUT':
-            // pullout(p.request, 'string', (error, body) => {
-            // if (error)
-            // return callback(error);
 
             onPUT(p.name, p.request.body, callback);
-            // });
-            break;
+
     }
 }
 
@@ -231,6 +231,14 @@ function onPUT(name, body, callback) {
 
             break;
 
+        case 'exist':
+            if (!files.path)
+                return callback(body);
+
+            exist(files.path, callback);
+
+            break;
+
         default:
             callback();
             break;
@@ -273,6 +281,20 @@ function save(data, _path, fn) {
             }else{
                 fn(error);
             }
+        });
+    } catch (error) {
+        fn(error);
+    }
+}
+
+function exist(_path, fn) {
+    try {
+        fs.exists(_path, function (status) {
+            fn(null, {
+                rest: true
+            }, {
+                status: status
+            });
         });
     } catch (error) {
         fn(error);

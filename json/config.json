@@ -16,7 +16,7 @@
     "cache": true,
     "showKeysPanel": true,
     "port": 8000,
-    "ip": null,
+    "ip": "127.0.0.1",
     "root": "/",
     "prefix": "",
     "progress": true,

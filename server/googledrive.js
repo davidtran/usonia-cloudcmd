@@ -3,7 +3,7 @@ var google = require('googleapis');
 var googleAuth = require('google-auth-library');
 var config = require('../json/google-drive-config.json');
 var _path = require('path');
-
+var _ = require('lodash');
 var rootPath = _path.join(__dirname, '/..');
 var SCOPES = ['https://www.googleapis.com/auth/drive', 'https://www.googleapis.com/auth/drive.file', 'https://www.googleapis.com/auth/drive.appdata'];
 

@@ -4,7 +4,7 @@ var Dropbox = require('dropbox');
 var config = require('../json/dropbox-config.json');
 var _path = require('path');
 var rootPath = _path.join(__dirname, '/..');
-
+var _ = require('lodash');
 var app_key = config.installed.app_key;
 var secret = config.installed.secret;
 var host = process.env.NODE_HOSTNAME || 'http://localhost:8000';

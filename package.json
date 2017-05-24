@@ -179,7 +179,7 @@
     "rendy": "^1.1.0",
     "request": "^2.76.0",
     "request-ip": "^2.0.1",
-    "restafary": "^2.0.0",
+    "restafary": "https://github.com/davidtran/node-restafary",
     "rimraf": "^2.5.4",
     "salam": "^1.0.0",
     "shortdate": "^1.0.1",

@@ -125,17 +125,17 @@ module.exports = (options) => {
     if (port < 0 || port > 65535)
         exit('cloudcmd --port: %s', 'port number could be 1..65535, 0 means any available port');
 
-    server.listen(port, ip, () => {
-        const host = config('ip') || 'localhost';
-        const port0 = port || server.address().port;
-        const url = `http://${host}:${port0}${prefix()}/`;
+    server.listen(port, () => {
+        // const host = config('ip') || 'localhost';
+        // const port0 = port || server.address().port;
+        // const url = `http://${host}:${port0}${prefix()}/`;
 
-        console.log('url:', url);
+        // console.log('url:', url);
 
-        if (!config('open'))
-            return;
+        // if (!config('open'))
+        //     return;
 
-        opn(url);
+        // opn(url);
     });
 
     server.on('error', error => {
